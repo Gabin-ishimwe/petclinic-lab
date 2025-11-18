@@ -1,79 +1,47 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  serviceAccountName: jenkins
-  containers:
-  - name: maven
-    image: maven:3.8.4-openjdk-11
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - mountPath: /root/.m2
-      name: maven-cache
-  - name: docker
-    image: docker:latest
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command:
-    - cat
-    tty: true
-  volumes:
-  - name: maven-cache
-    emptyDir: {}
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-"""
-        }
-    }
+    agent any
 
     environment {
-        DOCKER_HUB_REPO = 'gabinishimwe/petclinic'  // Update with your Docker Hub username
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-credentials')
-        BUILD_VERSION = "${BUILD_NUMBER}"
+        DOCKER_REPO = 'gabinishimwe/petclinic'
+        DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo "Checking out repository..."
+                echo "=== CHECKOUT STAGE ==="
+                echo "Repository: ${env.GIT_URL}"
+                echo "Branch: ${env.GIT_BRANCH}"
                 checkout scm
-                sh 'ls -la'
+                sh '''
+                    echo "Repository contents:"
+                    ls -la
+                    pwd
+                '''
             }
         }
 
         stage('Build') {
             steps {
-                container('maven') {
-                    echo "🔨 Building Spring Boot application..."
-                    sh '''
-                        mvn clean compile -DskipTests
-                        echo "Build completed successfully"
-                    '''
-                }
+                echo "=== BUILD STAGE ==="
+                sh '''
+                    echo "Java version:"
+                    java -version
+                    echo "Maven version:"
+                    mvn --version
+                    echo "Building Spring Boot application..."
+                    mvn clean compile -DskipTests
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                container('maven') {
-                    echo "🧪 Running tests..."
-                    sh '''
-                        mvn test
-                        echo "Tests completed"
-                    '''
-                }
+                echo "=== TEST STAGE ==="
+                sh '''
+                    echo "Running tests..."
+                    mvn test
+                '''
             }
             post {
                 always {
@@ -84,26 +52,25 @@ spec:
 
         stage('Static Analysis') {
             steps {
-                container('maven') {
-                    echo "🔍 Running static analysis..."
-                    sh '''
-                        # Basic static analysis - you can enhance this
-                        mvn compile
-                        echo "Static analysis completed"
-                    '''
-                }
+                echo "=== STATIC ANALYSIS STAGE ==="
+                sh '''
+                    echo "Running basic static analysis..."
+                    mvn compile
+                    echo "Java files count:"
+                    find src -name "*.java" | wc -l
+                '''
             }
         }
 
         stage('Package') {
             steps {
-                container('maven') {
+                echo "=== PACKAGE STAGE ==="
+                sh '''
                     echo "Packaging application..."
-                    sh '''
-                        mvn package -DskipTests
-                        ls -la target/*.jar
-                    '''
-                }
+                    mvn package -DskipTests
+                    echo "Generated artifacts:"
+                    ls -la target/
+                '''
             }
             post {
                 success {
@@ -114,42 +81,50 @@ spec:
 
         stage('Build Docker Image') {
             steps {
-                container('docker') {
+                echo "=== DOCKER BUILD STAGE ==="
+                sh '''
+                    echo "Docker version:"
+                    docker --version
                     echo "Building Docker image..."
-                    sh '''
-                        docker build -t ${DOCKER_HUB_REPO}:${BUILD_VERSION} .
-                        docker tag ${DOCKER_HUB_REPO}:${BUILD_VERSION} ${DOCKER_HUB_REPO}:latest
-                        echo "Docker image built successfully"
-                    '''
-                }
+                    docker build -t ${DOCKER_REPO}:${BUILD_NUMBER} .
+                    docker tag ${DOCKER_REPO}:${BUILD_NUMBER} ${DOCKER_REPO}:latest
+                    echo "Docker images:"
+                    docker images | grep petclinic
+                '''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                container('docker') {
-                    echo "Pushing to Docker Hub..."
-                    sh '''
-                        echo ${DOCKER_HUB_CREDENTIALS_PSW} | docker login -u ${DOCKER_HUB_CREDENTIALS_USR} --password-stdin
-                        docker push ${DOCKER_HUB_REPO}:${BUILD_VERSION}
-                        docker push ${DOCKER_HUB_REPO}:latest
-                        echo "Images pushed successfully to Docker Hub"
-                    '''
-                }
+                echo "=== DOCKER PUSH STAGE ==="
+                sh '''
+                    echo "Logging into Docker Hub..."
+                    echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin
+                    echo "Pushing images..."
+                    docker push ${DOCKER_REPO}:${BUILD_NUMBER}
+                    docker push ${DOCKER_REPO}:latest
+                    echo "✅ Images pushed successfully!"
+                '''
             }
         }
     }
 
     post {
         always {
+            echo "=== CLEANUP ==="
+            sh '''
+                docker system prune -f || echo "Docker cleanup completed"
+            '''
             cleanWs()
         }
         success {
-            echo "✅ Pipeline completed successfully!"
-            echo "Image available: ${DOCKER_HUB_REPO}:${BUILD_VERSION}"
+            echo "🎉 PIPELINE SUCCESS!"
+            echo "✅ Image available: ${DOCKER_REPO}:${BUILD_NUMBER}"
+            echo "🔗 Docker Hub: https://hub.docker.com/r/gabinishimwe/petclinic"
         }
         failure {
-            echo "❌ Pipeline failed - check logs for details"
+            echo "❌ PIPELINE FAILED!"
+            echo "Check the logs above for error details"
         }
     }
 }
