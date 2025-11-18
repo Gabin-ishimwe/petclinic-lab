@@ -7,6 +7,33 @@ pipeline {
     }
 
     stages {
+        stage('Setup Docker CLI') {
+            steps {
+                echo "=== INSTALLING DOCKER CLI ==="
+                sh '''
+                    # Check if docker is available
+                    if ! command -v docker &> /dev/null; then
+                        echo "Installing Docker CLI..."
+
+                        # Install as jenkins user (no root needed for CLI)
+                        curl -fsSL https://get.docker.com -o get-docker.sh
+                        chmod +x get-docker.sh
+
+                        # Install Docker CLI only (not daemon)
+                        export DOWNLOAD_URL="https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz"
+                        curl -fsSL $DOWNLOAD_URL | tar -xz
+                        sudo mv docker/docker /usr/local/bin/
+                        rm -rf docker get-docker.sh
+
+                        echo "Docker CLI installed"
+                    fi
+
+                    # Test docker
+                    docker --version
+                    docker info || echo "Docker daemon not running, but CLI available"
+                '''
+            }
+        }
         stage('Checkout') {
             steps {
                 echo "=== CHECKOUT STAGE ==="
