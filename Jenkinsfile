@@ -45,25 +45,25 @@ pipeline {
                     ./mvnw test
                 '''
             }
-            post {
-                always {
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
-                }
-            }
+//             post {
+//                 always {
+//                     publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+//                 }
+//             }
         }
 
-        stage('Static Analysis') {
-            steps {
-                echo "=== STATIC ANALYSIS STAGE ==="
-                sh '''
-                    chmod +x ./mvnw
-                    echo "Running basic static analysis..."
-                    ./mvnw compile
-                    echo "Java files count:"
-                    find src -name "*.java" | wc -l
-                '''
-            }
-        }
+//         stage('Static Analysis') {
+//             steps {
+//                 echo "=== STATIC ANALYSIS STAGE ==="
+//                 sh '''
+//                     chmod +x ./mvnw
+//                     echo "Running basic static analysis..."
+//                     ./mvnw compile
+//                     echo "Java files count:"
+//                     find src -name "*.java" | wc -l
+//                 '''
+//             }
+//         }
 
         stage('Package') {
             steps {
