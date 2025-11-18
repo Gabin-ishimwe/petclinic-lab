@@ -28,9 +28,9 @@ pipeline {
                     echo "Java version:"
                     java -version
                     echo "Maven version:"
-                    mvn --version
+                    ./mvnw --version
                     echo "Building Spring Boot application..."
-                    mvn clean compile -DskipTests
+                    ./mvnw clean compile -DskipTests
                 '''
             }
         }
@@ -40,7 +40,7 @@ pipeline {
                 echo "=== TEST STAGE ==="
                 sh '''
                     echo "Running tests..."
-                    mvn test
+                    ./mvnw test
                 '''
             }
             post {
@@ -55,7 +55,7 @@ pipeline {
                 echo "=== STATIC ANALYSIS STAGE ==="
                 sh '''
                     echo "Running basic static analysis..."
-                    mvn compile
+                    ./mvnw compile
                     echo "Java files count:"
                     find src -name "*.java" | wc -l
                 '''
@@ -67,7 +67,7 @@ pipeline {
                 echo "=== PACKAGE STAGE ==="
                 sh '''
                     echo "Packaging application..."
-                    mvn package -DskipTests
+                    ./mvnw package -DskipTests
                     echo "Generated artifacts:"
                     ls -la target/
                 '''
