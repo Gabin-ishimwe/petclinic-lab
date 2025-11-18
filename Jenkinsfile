@@ -27,6 +27,7 @@ pipeline {
                 sh '''
                     echo "Java version:"
                     java -version
+                    chmod +x ./mvnw
                     echo "Maven version:"
                     ./mvnw --version
                     echo "Building Spring Boot application..."
@@ -39,6 +40,7 @@ pipeline {
             steps {
                 echo "=== TEST STAGE ==="
                 sh '''
+                    chmod +x ./mvnw
                     echo "Running tests..."
                     ./mvnw test
                 '''
@@ -54,6 +56,7 @@ pipeline {
             steps {
                 echo "=== STATIC ANALYSIS STAGE ==="
                 sh '''
+                    chmod +x ./mvnw
                     echo "Running basic static analysis..."
                     ./mvnw compile
                     echo "Java files count:"
@@ -66,6 +69,7 @@ pipeline {
             steps {
                 echo "=== PACKAGE STAGE ==="
                 sh '''
+                    chmod +x ./mvnw
                     echo "Packaging application..."
                     ./mvnw package -DskipTests
                     echo "Generated artifacts:"
