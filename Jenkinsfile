@@ -22,7 +22,7 @@ pipeline {
                         # Install Docker CLI only (not daemon)
                         export DOWNLOAD_URL="https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz"
                         curl -fsSL $DOWNLOAD_URL | tar -xz
-                        sudo mv docker/docker /usr/local/bin/
+                        mv docker/docker /usr/local/bin/
                         rm -rf docker get-docker.sh
 
                         echo "Docker CLI installed"
