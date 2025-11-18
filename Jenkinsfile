@@ -11,26 +11,16 @@ pipeline {
             steps {
                 echo "=== INSTALLING DOCKER CLI ==="
                 sh '''
-                    # Check if docker is available
+                    # Install Docker CLI in workspace
                     if ! command -v docker &> /dev/null; then
                         echo "Installing Docker CLI..."
-
-                        # Install as jenkins user (no root needed for CLI)
-                        curl -fsSL https://get.docker.com -o get-docker.sh
-                        chmod +x get-docker.sh
-
-                        # Install Docker CLI only (not daemon)
-                        export DOWNLOAD_URL="https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz"
-                        curl -fsSL $DOWNLOAD_URL | tar -xz
-                        mv docker/docker /usr/local/bin/
-                        rm -rf docker get-docker.sh
-
-                        echo "Docker CLI installed"
+                        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz | tar -xz
+                        chmod +x docker/docker
+                        echo "Docker CLI ready in workspace"
                     fi
 
-                    # Test docker
-                    docker --version
-                    docker info || echo "Docker daemon not running, but CLI available"
+                    # Test Docker
+                    ./docker/docker --version
                 '''
             }
         }
@@ -110,31 +100,23 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build & Push') {
             steps {
-                echo "=== DOCKER BUILD STAGE ==="
+                echo "=== DOCKER BUILD & PUSH ==="
                 sh '''
-                    echo "Docker version:"
-                    docker --version
-                    echo "Building Docker image..."
-                    docker build -t ${DOCKER_REPO}:${BUILD_NUMBER} .
-                    docker tag ${DOCKER_REPO}:${BUILD_NUMBER} ${DOCKER_REPO}:latest
-                    echo "Docker images:"
-                    docker images | grep petclinic
-                '''
-            }
-        }
+                    # Use local Docker CLI
+                    DOCKER_CMD="./docker/docker"
 
-        stage('Push to Docker Hub') {
-            steps {
-                echo "=== DOCKER PUSH STAGE ==="
-                sh '''
-                    echo "Logging into Docker Hub..."
-                    echo ${DOCKER_CREDENTIALS_PSW} | docker login -u ${DOCKER_CREDENTIALS_USR} --password-stdin
-                    echo "Pushing images..."
-                    docker push ${DOCKER_REPO}:${BUILD_NUMBER}
-                    docker push ${DOCKER_REPO}:latest
-                    echo "✅ Images pushed successfully!"
+                    echo "Building image..."
+                    $DOCKER_CMD build -t ${DOCKER_REPO}:${BUILD_NUMBER} .
+                    $DOCKER_CMD tag ${DOCKER_REPO}:${BUILD_NUMBER} ${DOCKER_REPO}:latest
+
+                    echo "Pushing to Docker Hub..."
+                    echo ${DOCKER_CREDENTIALS_PSW} | $DOCKER_CMD login -u ${DOCKER_CREDENTIALS_USR} --password-stdin
+                    $DOCKER_CMD push ${DOCKER_REPO}:${BUILD_NUMBER}
+                    $DOCKER_CMD push ${DOCKER_REPO}:latest
+
+                    echo "✅ Success!"
                 '''
             }
         }
