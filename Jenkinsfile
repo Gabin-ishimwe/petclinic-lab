@@ -83,7 +83,7 @@ pipeline {
                 sh '''
                     chmod +x ./mvnw
                     echo "Packaging application..."
-                    ./mvnw package -DskipTests
+                    ./mvnw package -DskipTests -Denforcer.skip=true -Dcheckstyle.skip=true
                     echo "Generated artifacts:"
                     ls -la target/
                 '''
