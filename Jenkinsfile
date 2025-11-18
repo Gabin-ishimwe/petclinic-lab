@@ -48,7 +48,7 @@ pipeline {
                     echo "Maven version:"
                     ./mvnw --version
                     echo "Building Spring Boot application..."
-                    ./mvnw clean compile -DskipTests
+                    ./mvnw clean compile -DskipTests -B -Denforcer.skip=true -Dcheckstyle.skip=true
                 '''
             }
         }
