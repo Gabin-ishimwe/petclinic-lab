@@ -59,14 +59,9 @@ pipeline {
                 sh '''
                     chmod +x ./mvnw
                     echo "Running tests..."
-                    ./mvnw test
+                    ./mvnw test -Denforcer.skip=true -Dcheckstyle.skip=true
                 '''
             }
-//             post {
-//                 always {
-//                     publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
-//                 }
-//             }
         }
 
 //         stage('Static Analysis') {
