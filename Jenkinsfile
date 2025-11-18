@@ -14,7 +14,7 @@ pipeline {
                     # Install Docker CLI in workspace
                     if ! command -v docker &> /dev/null; then
                         echo "Installing Docker CLI..."
-                        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz | tar -xz
+                        curl -fsSL https://download.docker.com/linux/static/stable/aarch64/docker-24.0.7.tgz | tar -xz
                         chmod +x docker/docker
                         echo "Docker CLI ready in workspace"
                     fi
@@ -116,7 +116,7 @@ pipeline {
                     $DOCKER_CMD push ${DOCKER_REPO}:${BUILD_NUMBER}
                     $DOCKER_CMD push ${DOCKER_REPO}:latest
 
-                    echo "✅ Success!"
+                    echo "Success!"
                 '''
             }
         }
